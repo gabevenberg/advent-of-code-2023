@@ -1,4 +1,5 @@
-use crate::parse::*
+use crate::parse::*;
+
 pub fn part1() -> usize {
     unimplemented!()
 }
