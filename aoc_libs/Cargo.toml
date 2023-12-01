@@ -1,0 +1,6 @@
+[package]
+name = "aoc_libs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description.workspace = true

@@ -1,0 +1,21 @@
+[workspace]
+members = [
+	"template",
+	"aoc_libs",
+	"days/*",
+]
+default-members = [ "days/*", "aoc_libs" ]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Gabriel Venberg"]
+edition = "2021"
+description = "advent of code 2022 in rust"
+
+[workspace.dependencies]
+aoc_libs = {path = "./aoc_libs"}
+regex = "1"
+once_cell = "1.16"
+thiserror = "1.0"
+nom = "7.1"
