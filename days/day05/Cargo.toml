@@ -1,0 +1,10 @@
+[package]
+name = "day05"
+authors.workspace = true
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+aoc_libs.workspace = true
+nom.workspace = true
