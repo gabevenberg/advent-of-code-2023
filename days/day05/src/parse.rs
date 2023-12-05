@@ -8,18 +8,25 @@ use nom::{
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Map {
-    from: String,
-    to: String,
-    ranges: Vec<Range>,
+    pub from: String,
+    pub to: String,
+    pub ranges: Vec<Range>,
 }
 
 impl Map {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
+    pub fn map(&self, src: u64)->u64 {
+        for range in &self.ranges {
+            if range.is_applicable(&src) {
+                return range.map(src);
+            }
+        }
+        src
+    }
+    fn parse(input: &str) -> IResult<&str, Self> {
         let (input, (from, to)) = delimited(multispace0, Self::parse_to_from, multispace0)(input)?;
         let (input, ranges) = many1(Range::parse)(input)?;
         Ok((input, Map { from, to, ranges }))
     }
-
     fn parse_to_from(input: &str) -> IResult<&str, (String, String)> {
         let (input, from) = alpha1(input)?;
         let (input, to) = terminated(preceded(tag("-to-"), alpha1), tag(" map:\n"))(input)?;
@@ -29,13 +36,26 @@ impl Map {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Range {
-    dest_start: u64,
-    src_start: u64,
-    len: u64,
+    pub dest_start: u64,
+    pub src_start: u64,
+    pub len: u64,
 }
 
 impl Range {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
+    fn is_applicable(&self, src: &u64) -> bool {
+        self.src_start <= *src && *src < (self.src_start + self.len)
+    }
+
+    fn map(&self, src: u64) -> u64 {
+        if self.is_applicable(&src) {
+            let offset = src - self.src_start;
+            self.dest_start + offset
+        } else {
+            src
+        }
+    }
+
+    fn parse(input: &str) -> IResult<&str, Self> {
         let number = delimited(multispace0, nom::character::complete::u64, multispace0);
         let (input, numbers) = count(number, 3)(input)?;
         Ok((
@@ -65,6 +85,51 @@ pub fn parse(input: &str) -> (Vec<u64>, Vec<Map>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_map() {
+        let tested = Map {
+            from: "seed".to_string(),
+            to: "soil".to_string(),
+            ranges: vec![
+                Range {
+                    dest_start: 50,
+                    src_start: 98,
+                    len: 2,
+                },
+                Range {
+                    dest_start: 52,
+                    src_start: 50,
+                    len: 48,
+                },
+            ],
+        };
+        let input = [79, 14, 55, 13];
+        let output = input.map(|i| tested.map(i));
+        assert_eq!(output, [81, 14, 57, 13])
+    }
+
+    #[test]
+    fn test_is_appliccable() {
+        let tested = Range {
+            dest_start: 50,
+            src_start: 98,
+            len: 2,
+        };
+        assert!(tested.is_applicable(&99));
+        assert!(!tested.is_applicable(&100));
+        assert!(!tested.is_applicable(&97));
+    }
+    #[test]
+    fn test_range_map() {
+        let tested = Range {
+            dest_start: 52,
+            src_start: 50,
+            len: 48,
+        };
+        assert_eq!(tested.map(79), 81);
+        assert_eq!(tested.map(100), 100);
+    }
 
     #[test]
     fn test_map_parse() {
