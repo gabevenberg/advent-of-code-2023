@@ -5,7 +5,7 @@ pub fn part2(input: &[(Hand, u32)]) -> usize {
         .iter()
         .map(|c| (c.0.turn_jacks_to_jokers(), c.1))
         .collect();
-    input.sort_by_key(|set| set.0);
+    input.sort_by(|a, b| a.0.cmp(&b.0) );
     input
         .iter()
         .enumerate()
@@ -21,147 +21,109 @@ mod tests {
     fn test_part2() {
         let input = vec![
             (
-                Hand {
-                    cards: [Card::Two, Card::Three, Card::Four, Card::Five, Card::Ace],
-                },
+                Hand::new([Card::Two, Card::Three, Card::Four, Card::Five, Card::Ace]),
                 1,
             ),
             (
-                Hand {
-                    cards: [Card::Queen, Card::Two, Card::King, Card::Joker, Card::Joker],
-                },
+                Hand::new([Card::Queen, Card::Two, Card::King, Card::Joker, Card::Joker]),
                 13,
             ),
             (
-                Hand {
-                    cards: [Card::Queen, Card::Two, Card::Queen, Card::Two, Card::Queen],
-                },
+                Hand::new([Card::Queen, Card::Two, Card::Queen, Card::Two, Card::Queen]),
                 19,
             ),
             (
-                Hand {
-                    cards: [Card::Tim, Card::Three, Card::Tim, Card::Three, Card::Joker],
-                },
+                Hand::new([Card::Tim, Card::Three, Card::Tim, Card::Three, Card::Joker]),
                 17,
             ),
             (
-                Hand {
-                    cards: [
-                        Card::Tim,
-                        Card::Three,
-                        Card::Queen,
-                        Card::Three,
-                        Card::Three,
-                    ],
-                },
+                Hand::new([
+                    Card::Tim,
+                    Card::Three,
+                    Card::Queen,
+                    Card::Three,
+                    Card::Three,
+                ]),
                 11,
             ),
             (
-                Hand {
-                    cards: [Card::Two, Card::Three, Card::Four, Card::Five, Card::Joker],
-                },
+                Hand::new([Card::Two, Card::Three, Card::Four, Card::Five, Card::Joker]),
                 3,
             ),
             (
-                Hand {
-                    cards: [Card::Joker, Card::Three, Card::Four, Card::Five, Card::Ace],
-                },
+                Hand::new([Card::Joker, Card::Three, Card::Four, Card::Five, Card::Ace]),
                 2,
             ),
             (
-                Hand {
-                    cards: [Card::Three, Card::Two, Card::Tim, Card::Three, Card::King],
-                },
+                Hand::new([Card::Three, Card::Two, Card::Tim, Card::Three, Card::King]),
                 5,
             ),
             (
-                Hand {
-                    cards: [Card::Tim, Card::Five, Card::Five, Card::Joker, Card::Five],
-                },
+                Hand::new([Card::Tim, Card::Five, Card::Five, Card::Joker, Card::Five]),
                 29,
             ),
             (
-                Hand {
-                    cards: [Card::King, Card::King, Card::Six, Card::Seven, Card::Seven],
-                },
+                Hand::new([Card::King, Card::King, Card::Six, Card::Seven, Card::Seven]),
                 7,
             ),
             (
-                Hand {
-                    cards: [Card::King, Card::Tim, Card::Joker, Card::Joker, Card::Tim],
-                },
+                Hand::new([Card::King, Card::Tim, Card::Joker, Card::Joker, Card::Tim]),
                 34,
             ),
             (
-                Hand {
-                    cards: [
-                        Card::Queen,
-                        Card::Queen,
-                        Card::Queen,
-                        Card::Joker,
-                        Card::Ace,
-                    ],
-                },
+                Hand::new([
+                    Card::Queen,
+                    Card::Queen,
+                    Card::Queen,
+                    Card::Joker,
+                    Card::Ace,
+                ]),
                 31,
             ),
             (
-                Hand {
-                    cards: [
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                    ],
-                },
+                Hand::new([
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                ]),
                 37,
             ),
             (
-                Hand {
-                    cards: [Card::Joker, Card::Ace, Card::Ace, Card::Ace, Card::Ace],
-                },
+                Hand::new([Card::Joker, Card::Ace, Card::Ace, Card::Ace, Card::Ace]),
                 43,
             ),
             (
-                Hand {
-                    cards: [Card::Ace, Card::Ace, Card::Ace, Card::Ace, Card::Joker],
-                },
+                Hand::new([Card::Ace, Card::Ace, Card::Ace, Card::Ace, Card::Joker]),
                 59,
             ),
             (
-                Hand {
-                    cards: [Card::Ace, Card::Ace, Card::Ace, Card::Ace, Card::Ace],
-                },
+                Hand::new([Card::Ace, Card::Ace, Card::Ace, Card::Ace, Card::Ace]),
                 61,
             ),
             (
-                Hand {
-                    cards: [Card::Two, Card::Ace, Card::Ace, Card::Ace, Card::Ace],
-                },
+                Hand::new([Card::Two, Card::Ace, Card::Ace, Card::Ace, Card::Ace]),
                 23,
             ),
             (
-                Hand {
-                    cards: [
-                        Card::Two,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                    ],
-                },
+                Hand::new([
+                    Card::Two,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                ]),
                 53,
             ),
             (
-                Hand {
-                    cards: [
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Joker,
-                        Card::Two,
-                    ],
-                },
+                Hand::new([
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Joker,
+                    Card::Two,
+                ]),
                 41,
             ),
         ];
