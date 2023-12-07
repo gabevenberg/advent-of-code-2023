@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use nom::{
     bytes::complete::tag,
     character::complete::{alpha1, multispace0},
@@ -6,15 +8,63 @@ use nom::{
     IResult,
 };
 
+pub type SeedRange = Range<u64>;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Map {
     pub from: String,
     pub to: String,
-    pub ranges: Vec<Range>,
+    pub ranges: Vec<MapRange>,
 }
 
 impl Map {
-    pub fn map(&self, src: u64)->u64 {
+    pub fn map_ranges(&self, seeds: SeedRange) -> Vec<SeedRange> {
+        let mut unprocessed_seeds = vec![seeds];
+        let mut processed_seeds = Vec::new();
+        //using this instead of a for loop so that we can continue to push new stuff onto the
+        //unprocessed queue
+        while let Some(seed) = unprocessed_seeds.pop() {
+            //find map with intersection with seed
+            let map_to_apply = self
+                .ranges
+                .iter()
+                .find(|&map_range| !map_range.intersection_with_seed(&seed).is_empty());
+
+            let Some(map_to_apply) = map_to_apply else {
+                //if no mapping to do, consider seed processed
+                processed_seeds.push(seed);
+                continue;
+            };
+
+            let map_end = map_to_apply.src_start + map_to_apply.len;
+            let offset = map_to_apply.dest_start as i64 - map_to_apply.src_start as i64;
+            let intersection = map_to_apply.intersection_with_seed(&seed);
+
+            processed_seeds.push(Range {
+                start: (intersection.start as i64 + offset) as u64,
+                end: (intersection.end as i64 + offset) as u64,
+            });
+
+            //add the part before the map range back to the queue
+            if seed.start < map_to_apply.src_start {
+                unprocessed_seeds.push(Range {
+                    start: seed.start,
+                    end: intersection.start,
+                })
+            };
+
+            //add the part after the map range back to the queue
+            if seed.end > map_end {
+                unprocessed_seeds.push(Range {
+                    start: intersection.end,
+                    end: seed.end,
+                })
+            };
+        }
+        processed_seeds
+    }
+
+    pub fn map(&self, src: u64) -> u64 {
         for range in &self.ranges {
             if range.is_applicable(&src) {
                 return range.map(src);
@@ -24,7 +74,7 @@ impl Map {
     }
     fn parse(input: &str) -> IResult<&str, Self> {
         let (input, (from, to)) = delimited(multispace0, Self::parse_to_from, multispace0)(input)?;
-        let (input, ranges) = many1(Range::parse)(input)?;
+        let (input, ranges) = many1(MapRange::parse)(input)?;
         Ok((input, Map { from, to, ranges }))
     }
     fn parse_to_from(input: &str) -> IResult<&str, (String, String)> {
@@ -35,13 +85,17 @@ impl Map {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Range {
+pub struct MapRange {
     pub dest_start: u64,
     pub src_start: u64,
     pub len: u64,
 }
 
-impl Range {
+impl MapRange {
+    fn intersection_with_seed(&self, seed: &SeedRange) -> SeedRange {
+        seed.start.max(self.src_start)..seed.end.min(self.src_start + self.len)
+    }
+
     fn is_applicable(&self, src: &u64) -> bool {
         self.src_start <= *src && *src < (self.src_start + self.len)
     }
@@ -60,7 +114,7 @@ impl Range {
         let (input, numbers) = count(number, 3)(input)?;
         Ok((
             input,
-            Range {
+            MapRange {
                 dest_start: numbers[0],
                 src_start: numbers[1],
                 len: numbers[2],
@@ -87,17 +141,64 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_map_range() {
+        let tested = Map {
+            from: "seed".to_string(),
+            to: "soil".to_string(),
+            ranges: vec![
+                MapRange {
+                    dest_start: 50,
+                    src_start: 98,
+                    len: 2,
+                },
+                MapRange {
+                    dest_start: 52,
+                    src_start: 50,
+                    len: 48,
+                },
+            ],
+        };
+        let input: SeedRange = 40..120;
+        assert_eq!(
+            tested.map_ranges(input),
+            vec![
+                50..52,
+                100..120,
+                52..100,
+                40..50
+            ]
+        )
+    }
+
+    #[test]
+    fn test_intersection_with_seed() {
+        let tested = MapRange {
+            dest_start: 52,
+            src_start: 50,
+            len: 48,
+        };
+        let input: SeedRange = 80..120;
+        assert_eq!(tested.intersection_with_seed(&input), 80..98);
+        let input: SeedRange = 40..60;
+        assert_eq!(tested.intersection_with_seed(&input), 50..60);
+        let input: SeedRange = 55..79;
+        assert_eq!(tested.intersection_with_seed(&input), 55..79);
+        let input: SeedRange = 40..120;
+        assert_eq!(tested.intersection_with_seed(&input), 50..98);
+    }
+
+    #[test]
     fn test_map() {
         let tested = Map {
             from: "seed".to_string(),
             to: "soil".to_string(),
             ranges: vec![
-                Range {
+                MapRange {
                     dest_start: 50,
                     src_start: 98,
                     len: 2,
                 },
-                Range {
+                MapRange {
                     dest_start: 52,
                     src_start: 50,
                     len: 48,
@@ -111,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_is_appliccable() {
-        let tested = Range {
+        let tested = MapRange {
             dest_start: 50,
             src_start: 98,
             len: 2,
@@ -120,9 +221,10 @@ mod tests {
         assert!(!tested.is_applicable(&100));
         assert!(!tested.is_applicable(&97));
     }
+
     #[test]
     fn test_range_map() {
-        let tested = Range {
+        let tested = MapRange {
             dest_start: 52,
             src_start: 50,
             len: 48,
@@ -142,12 +244,12 @@ mod tests {
                     from: "seed".to_string(),
                     to: "soil".to_string(),
                     ranges: vec![
-                        Range {
+                        MapRange {
                             dest_start: 50,
                             src_start: 98,
                             len: 2
                         },
-                        Range {
+                        MapRange {
                             dest_start: 52,
                             src_start: 50,
                             len: 48
@@ -161,10 +263,10 @@ mod tests {
     #[test]
     fn test_range_parse() {
         assert_eq!(
-            Range::parse("50 98 2\n").unwrap(),
+            MapRange::parse("50 98 2\n").unwrap(),
             (
                 "",
-                Range {
+                MapRange {
                     dest_start: 50,
                     src_start: 98,
                     len: 2,
@@ -172,10 +274,10 @@ mod tests {
             )
         );
         assert_eq!(
-            Range::parse("0 15 37\n").unwrap(),
+            MapRange::parse("0 15 37\n").unwrap(),
             (
                 "",
-                Range {
+                MapRange {
                     dest_start: 0,
                     src_start: 15,
                     len: 37,
@@ -221,12 +323,12 @@ mod tests {
                             from: "seed".to_string(),
                             to: "soil".to_string(),
                             ranges: vec![
-                                Range {
+                                MapRange {
                                     dest_start: 50,
                                     src_start: 98,
                                     len: 2
                                 },
-                                Range {
+                                MapRange {
                                     dest_start: 52,
                                     src_start: 50,
                                     len: 48
@@ -237,17 +339,17 @@ mod tests {
                             from: "soil".to_string(),
                             to: "fertilizer".to_string(),
                             ranges: vec![
-                                Range {
+                                MapRange {
                                     dest_start: 0,
                                     src_start: 15,
                                     len: 37
                                 },
-                                Range {
+                                MapRange {
                                     dest_start: 37,
                                     src_start: 52,
                                     len: 2
                                 },
-                                Range {
+                                MapRange {
                                     dest_start: 39,
                                     src_start: 0,
                                     len: 15
@@ -306,12 +408,12 @@ mod tests {
                         from: "seed".to_string(),
                         to: "soil".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 50,
                                 src_start: 98,
                                 len: 2
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 52,
                                 src_start: 50,
                                 len: 48
@@ -322,17 +424,17 @@ mod tests {
                         from: "soil".to_string(),
                         to: "fertilizer".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 0,
                                 src_start: 15,
                                 len: 37
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 37,
                                 src_start: 52,
                                 len: 2
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 39,
                                 src_start: 0,
                                 len: 15
@@ -343,22 +445,22 @@ mod tests {
                         from: "fertilizer".to_string(),
                         to: "water".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 49,
                                 src_start: 53,
                                 len: 8
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 0,
                                 src_start: 11,
                                 len: 42
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 42,
                                 src_start: 0,
                                 len: 7
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 57,
                                 src_start: 7,
                                 len: 4
@@ -369,12 +471,12 @@ mod tests {
                         from: "water".to_string(),
                         to: "light".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 88,
                                 src_start: 18,
                                 len: 7
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 18,
                                 src_start: 25,
                                 len: 70
@@ -385,17 +487,17 @@ mod tests {
                         from: "light".to_string(),
                         to: "temperature".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 45,
                                 src_start: 77,
                                 len: 23
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 81,
                                 src_start: 45,
                                 len: 19
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 68,
                                 src_start: 64,
                                 len: 13
@@ -406,12 +508,12 @@ mod tests {
                         from: "temperature".to_string(),
                         to: "humidity".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 0,
                                 src_start: 69,
                                 len: 1
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 1,
                                 src_start: 0,
                                 len: 69
@@ -422,12 +524,12 @@ mod tests {
                         from: "humidity".to_string(),
                         to: "location".to_string(),
                         ranges: vec![
-                            Range {
+                            MapRange {
                                 dest_start: 60,
                                 src_start: 56,
                                 len: 37
                             },
-                            Range {
+                            MapRange {
                                 dest_start: 56,
                                 src_start: 93,
                                 len: 4
