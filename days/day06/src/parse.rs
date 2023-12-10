@@ -13,13 +13,13 @@ pub struct Race {
 }
 
 impl Race {
-    pub fn distance_given_charge_time(&self, charge_time: u64) -> u64 {
-        if charge_time <= self.time {
-            charge_time * (self.time - charge_time)
-        } else {
-            0
-        }
-    }
+    // pub fn distance_given_charge_time(&self, charge_time: u64) -> u64 {
+    //     if charge_time <= self.time {
+    //         charge_time * (self.time - charge_time)
+    //     } else {
+    //         0
+    //     }
+    // }
 
     pub fn num_ways_to_win(&self) -> u64 {
         // since distance = charge(time-charge),
