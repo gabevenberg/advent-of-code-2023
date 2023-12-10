@@ -16,7 +16,7 @@ pub struct Node {
 }
 
 static NODE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^([[:alpha:]]{3}) = \(([[:alpha:]]{3}), ([[:alpha:]]{3})\)$").unwrap()
+    Regex::new(r"^([[:alnum:]]{3}) = \(([[:alnum:]]{3}), ([[:alnum:]]{3})\)$").unwrap()
 });
 
 pub fn parse(input: &str) -> (Vec<Direction>, HashMap<String, Node>) {
