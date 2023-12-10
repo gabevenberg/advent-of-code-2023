@@ -69,8 +69,6 @@ version = "0.1.0"
 dependencies = [
  "aoc_libs",
  "itertools",
- "once_cell",
- "regex",
 ]
 
 [[package]]

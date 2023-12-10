@@ -1,6 +1,4 @@
 use itertools::Itertools;
-use once_cell::sync::Lazy;
-use regex::Regex;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum Card {
@@ -82,16 +80,13 @@ impl Hand {
     }
 }
 
-static PARSE_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^([AKQJT98765432]{5}) (\d+)$").unwrap());
-
 pub fn parse(input: &str) -> Vec<(Hand, u32)> {
     input
         .lines()
         .map(|line| {
-            let captures = PARSE_REGEX.captures(line).unwrap();
-            let hand = &captures[1];
-            let bid: u32 = captures[2].parse().unwrap();
+            let mut splits = line.split(' ');
+            let hand = splits.next().unwrap();
+            let bid: u32 = splits.next().unwrap().parse().unwrap();
             let hand: Vec<Card> = hand
                 .chars()
                 .map(|c| match c {
@@ -111,8 +106,7 @@ pub fn parse(input: &str) -> Vec<(Hand, u32)> {
                     e => panic!("invalid card {}", e),
                 })
                 .collect();
-            let hand = Hand::new(hand.try_into().unwrap());
-            (hand, bid)
+            (Hand::new(hand.try_into().unwrap()), bid)
         })
         .collect()
 }
