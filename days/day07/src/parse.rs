@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum Card {
     Ace = 14,
     King = 13,
@@ -19,7 +20,7 @@ pub enum Card {
     Joker = 1,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Formation {
     FiveOfKind = 7,
     FourOfKind = 6,
@@ -30,29 +31,24 @@ pub enum Formation {
     HighCard = 1,
 }
 
-#[derive(Debug, PartialEq, Eq, Default)]
-struct UnorderedHand {
-    ace: u8,
-    king: u8,
-    queen: u8,
-    jack: u8,
-    tim: u8,
-    nine: u8,
-    eight: u8,
-    seven: u8,
-    six: u8,
-    five: u8,
-    four: u8,
-    three: u8,
-    two: u8,
-    joker: u8,
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Hand {
+    formation: Formation,
+    cards: [Card; 5],
 }
 
-impl UnorderedHand {
-    fn determine_formation(&self) -> Formation {
-        let amounts = self.get_vec_of_amounts();
-        let types = amounts.len();
-        let max_of_type = *amounts.iter().max().unwrap_or(&0) + self.joker;
+impl Hand {
+    pub fn new(cards: [Card; 5]) -> Hand {
+        Hand {
+            formation: Self::determine_formation(&cards),
+            cards,
+        }
+    }
+    fn determine_formation(cards: &[Card; 5]) -> Formation {
+        let mut counts = cards.iter().counts();
+        let jokers = counts.remove(&Card::Joker).unwrap_or(0);
+        let types = counts.len();
+        let max_of_type = counts.into_values().max().unwrap_or(0) + jokers;
         match types {
             // if 0 types, they are all joker.
             0 => Formation::FiveOfKind,
@@ -63,7 +59,7 @@ impl UnorderedHand {
                 match max_of_type {
                     4 => Formation::FourOfKind,
                     3 => Formation::FullHouse,
-                    _ => panic!("idk what type of hand this is: {:?}", self),
+                    _ => panic!("idk what type of hand this is: {:?}", cards),
                 }
             }
             3 => {
@@ -71,7 +67,7 @@ impl UnorderedHand {
                 match max_of_type {
                     3 => Formation::ThreeOfKind,
                     2 => Formation::TwoPair,
-                    _ => panic!("idk what type of hand this is: {:?}", self),
+                    _ => panic!("idk what type of hand this is: {:?}", cards),
                 }
             }
             4 => Formation::OnePair,
@@ -79,114 +75,10 @@ impl UnorderedHand {
             _ => panic!("how are there more than 5 types!"),
         }
     }
-    // just to make iteration easier
-    fn get_vec_of_amounts(&self) -> Vec<u8> {
-        let mut ret = Vec::new();
-        if self.ace > 0 {
-            ret.push(self.ace);
-        }
-        if self.king > 0 {
-            ret.push(self.king);
-        }
-        if self.queen > 0 {
-            ret.push(self.queen);
-        }
-        if self.jack > 0 {
-            ret.push(self.jack);
-        }
-        if self.tim > 0 {
-            ret.push(self.tim);
-        }
-        if self.nine > 0 {
-            ret.push(self.nine);
-        }
-        if self.eight > 0 {
-            ret.push(self.eight);
-        }
-        if self.seven > 0 {
-            ret.push(self.seven);
-        }
-        if self.six > 0 {
-            ret.push(self.six);
-        }
-        if self.five > 0 {
-            ret.push(self.five);
-        }
-        if self.four > 0 {
-            ret.push(self.four);
-        }
-        if self.three > 0 {
-            ret.push(self.three);
-        }
-        if self.two > 0 {
-            ret.push(self.two);
-        }
-        ret
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Hand {
-    pub cards: [Card; 5],
-    unordered_hand: UnorderedHand,
-}
-
-impl Hand {
-    pub fn new(cards: [Card; 5]) -> Hand {
-        Hand {
-            unordered_hand: Self::get_unordered_hand(&cards),
-            cards,
-        }
-    }
-    pub fn determine_formation(&self) -> Formation {
-        self.unordered_hand.determine_formation()
-    }
-    fn get_unordered_hand(cards: &[Card]) -> UnorderedHand {
-        cards
-            .iter()
-            .fold(UnorderedHand::default(), |mut acc, card| {
-                match card {
-                    Card::Ace => acc.ace += 1,
-                    Card::King => acc.king += 1,
-                    Card::Queen => acc.queen += 1,
-                    Card::Jack => acc.jack += 1,
-                    Card::Tim => acc.tim += 1,
-                    Card::Nine => acc.nine += 1,
-                    Card::Eight => acc.eight += 1,
-                    Card::Seven => acc.seven += 1,
-                    Card::Six => acc.six += 1,
-                    Card::Five => acc.five += 1,
-                    Card::Four => acc.four += 1,
-                    Card::Three => acc.three += 1,
-                    Card::Two => acc.two += 1,
-                    Card::Joker => acc.joker += 1,
-                };
-                acc
-            })
-    }
-    pub fn turn_jacks_to_jokers(&self) -> Hand {
-        Hand::new(
-            self.cards
-                .map(|c| if c == Card::Jack { Card::Joker } else { c }),
-        )
-    }
-}
-
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_formation = self.determine_formation();
-        let other_formation = other.determine_formation();
-        if self_formation != other_formation {
-            self_formation.cmp(&other_formation)
-        } else {
-            self.cards.cmp(&other.cards)
-        }
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+    pub fn turn_jacks_to_jokers(&mut self) {
+        self.cards = self
+            .cards
+            .map(|c| if c == Card::Jack { Card::Joker } else { c });
     }
 }
 
@@ -339,10 +231,7 @@ mod tests {
                 41,
             ),
         ];
-        input = input
-            .into_iter()
-            .map(|c| (c.0.turn_jacks_to_jokers(), c.1))
-            .collect();
+        input.iter_mut().for_each(|i| i.0.turn_jacks_to_jokers());
         input.sort_by(|a, b| a.0.cmp(&b.0));
         println!("{:#?}", input);
         //check that the bids are sorted (the input is curated to ensure that the bids are sorted
@@ -460,12 +349,9 @@ mod tests {
                 Formation::FiveOfKind,
             ),
         ];
-        tests = tests
-            .into_iter()
-            .map(|c| (c.0.turn_jacks_to_jokers(), c.1))
-            .collect();
+        tests.iter_mut().for_each(|i| i.0.turn_jacks_to_jokers());
         for test in tests {
-            assert_eq!(test.0.determine_formation(), test.1)
+            assert_eq!(test.0.formation, test.1)
         }
     }
 
@@ -650,7 +536,7 @@ mod tests {
             ),
         ];
         for test in tests {
-            assert_eq!(test.0.determine_formation(), test.1)
+            assert_eq!(test.0.formation, test.1)
         }
     }
 

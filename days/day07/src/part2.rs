@@ -1,10 +1,7 @@
 use crate::parse::*;
 
-pub fn part2(input: &[(Hand, u32)]) -> usize {
-    let mut input: Vec<(Hand, u32)> = input
-        .iter()
-        .map(|c| (c.0.turn_jacks_to_jokers(), c.1))
-        .collect();
+pub fn part2(input: &mut [(Hand, u32)]) -> usize {
+    input.iter_mut().for_each(|i| i.0.turn_jacks_to_jokers());
     input.sort_by(|a, b| a.0.cmp(&b.0) );
     input
         .iter()
@@ -19,7 +16,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let input = vec![
+        let mut input = vec![
             (
                 Hand::new([Card::Two, Card::Three, Card::Four, Card::Five, Card::Ace]),
                 1,
@@ -127,6 +124,6 @@ mod tests {
                 41,
             ),
         ];
-        assert_eq!(part2(&input), 6839);
+        assert_eq!(part2(&mut input), 6839);
     }
 }

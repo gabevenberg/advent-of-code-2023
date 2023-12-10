@@ -9,3 +9,4 @@ edition.workspace = true
 aoc_libs.workspace = true
 regex.workspace = true
 once_cell.workspace = true
+itertools.workspace = true
