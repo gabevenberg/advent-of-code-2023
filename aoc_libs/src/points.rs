@@ -1,3 +1,5 @@
+use crate::distances::Distances;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub struct Point {
     pub x: isize,
@@ -13,6 +15,12 @@ impl Point {
             x: zero_coord.x.checked_add_signed(self.x)?,
             y: zero_coord.y.checked_add_signed(-self.y)?,
         })
+    }
+}
+
+impl Distances for Point {
+    fn taxicab_distance(&self, other: &Self) -> usize {
+        self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
     }
 }
 
@@ -62,7 +70,7 @@ impl std::ops::Neg for Point {
 }
 
 /// an unsigned point in 2d space
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UPoint {
     pub x: usize,
     pub y: usize,
@@ -77,6 +85,12 @@ impl UPoint {
             x: -(zero_coord.x as isize - self.x as isize),
             y: zero_coord.y as isize - self.y as isize,
         }
+    }
+}
+
+impl Distances for UPoint {
+    fn taxicab_distance(&self, other: &Self) -> usize {
+        self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
     }
 }
 
@@ -184,7 +198,9 @@ where
     }
 }
 
-impl<T, const X: usize, const Y: usize> std::ops::IndexMut<Point> for FourQuadrantMatrix<{ X }, { Y }, T> {
+impl<T, const X: usize, const Y: usize> std::ops::IndexMut<Point>
+    for FourQuadrantMatrix<{ X }, { Y }, T>
+{
     fn index_mut(&mut self, index: Point) -> &mut Self::Output {
         let upoint = index
             .to_upoint(&self.zero_coord)
@@ -193,7 +209,9 @@ impl<T, const X: usize, const Y: usize> std::ops::IndexMut<Point> for FourQuadra
     }
 }
 
-impl<T, const X: usize, const Y: usize> std::ops::Index<Point> for FourQuadrantMatrix<{ X }, { Y }, T> {
+impl<T, const X: usize, const Y: usize> std::ops::Index<Point>
+    for FourQuadrantMatrix<{ X }, { Y }, T>
+{
     type Output = T;
 
     fn index(&self, index: Point) -> &Self::Output {

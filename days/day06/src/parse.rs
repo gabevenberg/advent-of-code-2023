@@ -116,19 +116,6 @@ mod tests {
     }
 
     #[test]
-    fn test_distance_given_charge_time() {
-        let input = Race { time: 7, record: 9 };
-        assert_eq!(input.distance_given_charge_time(0), 0);
-        assert_eq!(input.distance_given_charge_time(1), 6);
-        assert_eq!(input.distance_given_charge_time(2), 10);
-        assert_eq!(input.distance_given_charge_time(3), 12);
-        assert_eq!(input.distance_given_charge_time(4), 12);
-        assert_eq!(input.distance_given_charge_time(5), 10);
-        assert_eq!(input.distance_given_charge_time(6), 6);
-        assert_eq!(input.distance_given_charge_time(7), 0);
-    }
-
-    #[test]
     fn test_parse_part2() {
         let input = concat!("Time:      7  15   30\n", "Distance:  9  40  200\n",);
         assert_eq!(

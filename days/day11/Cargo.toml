@@ -1,0 +1,11 @@
+[package]
+name = "day11"
+authors.workspace = true
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+aoc_libs.workspace = true
+collection_literals.workspace = true
+itertools.workspace = true
