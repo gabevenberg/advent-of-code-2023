@@ -1,4 +1,6 @@
-pub fn parse(input: &str) -> usize {
+pub type StructuredInput = usize;
+
+pub fn parse(input: &str) -> StructuredInput {
     unimplemented!()
 }
 

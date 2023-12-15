@@ -1,6 +1,6 @@
 use crate::parse::*;
 
-pub fn part1() -> usize {
+pub fn part1(input: &StructuredInput) -> usize {
     unimplemented!()
 }
 
